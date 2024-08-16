@@ -43,7 +43,9 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 
       final movies = await searchMovies( query );
       initialMovies = movies;
-      debouncedMovies.add(movies);
+      if(!debouncedMovies.isClosed){
+        debouncedMovies.add(movies);
+      }
       isLoadingStream.add(false);
     });
   }
