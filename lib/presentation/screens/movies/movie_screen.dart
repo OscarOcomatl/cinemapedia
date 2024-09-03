@@ -1,28 +1,26 @@
 
 import 'package:animate_do/animate_do.dart';
 import 'package:cinemapedia/domain/entities/movie.dart';
-import 'package:cinemapedia/presentation/providers/movies/movie_info_provider.dart';
 import 'package:cinemapedia/presentation/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+
 class MovieScreen extends ConsumerStatefulWidget {
-
-  static const name = 'movie-screen';
-
-  final String movieId;
-
   const MovieScreen({
     required this.movieId,
     super.key
   });
+
+  static const name = 'movie-screen';
+
+  final String movieId;
 
   @override
   MovieScreenState createState() => MovieScreenState();
 }
 
 class MovieScreenState extends ConsumerState<MovieScreen> {
-
   @override
   void initState() {
     super.initState();
@@ -61,9 +59,9 @@ class MovieScreenState extends ConsumerState<MovieScreen> {
 }
 
 class _MovieDetails extends StatelessWidget {
+  const _MovieDetails({required this.movie});
 
   final Movie movie;
-  const _MovieDetails({required this.movie});
 
   @override
   Widget build(BuildContext context) {
@@ -126,10 +124,9 @@ class _MovieDetails extends StatelessWidget {
 }
 
 class _ActorsByMovie extends ConsumerWidget {
+const _ActorsByMovie({required this.movieId});
 
 final String movieId;
-
-const _ActorsByMovie({required this.movieId});
 
   @override
   Widget build(BuildContext context, ref){
@@ -200,17 +197,22 @@ const _ActorsByMovie({required this.movieId});
   }
 }
 
+final isFavoriteProvider = FutureProvider.family.autoDispose((ref, int movieId){
+  final localStorageRepository = ref.watch(localStorageRepositoryProvider);
+  return localStorageRepository.isMovieFavorite(movieId);// si está en favoritos
+});
 
-class _CustomSliverAppBar extends StatelessWidget {
-
-  final Movie movie;
-
+class _CustomSliverAppBar extends ConsumerWidget {
   const _CustomSliverAppBar({
     required this.movie,
   });
 
+  final Movie movie;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+
+    final AsyncValue isFavoriteFuture = ref.watch(isFavoriteProvider(movie.id));
 
     final size = MediaQuery.of(context).size;
 
@@ -220,10 +222,22 @@ class _CustomSliverAppBar extends StatelessWidget {
       foregroundColor: Colors.white,
       actions: [
         IconButton(
-          onPressed: (){
-            //TODO: Realizar le toggle
+          onPressed: () async {
+            // ref.watch(localStorageRepositoryProvider)
+            //   .toggleFavorite(movie);
+            await ref.read( favoriteMoviesProvider.notifier)
+              .toggleFavorite(movie);
+
+            ref.invalidate(isFavoriteProvider(movie.id)); // Invalida el estado del provider y lo regresa a su estado original
           },
-          icon: Icon(Icons.favorite_border)
+          icon: isFavoriteFuture.when(
+            loading: () => const CircularProgressIndicator(strokeWidth: 2),
+            data: (isFavorite) => isFavorite
+              ? const Icon(Icons.favorite_rounded, color: Colors.red)
+              : const Icon(Icons.favorite_border), 
+            error: (_,__) => throw UnimplementedError(), 
+          )
+          // const Icon(Icons.favorite_border)
           // icon: Icon(Icons.favorite_rounded, color: Colors.red),
         )
       ],
@@ -246,8 +260,8 @@ class _CustomSliverAppBar extends StatelessWidget {
                 },
               ),
             ),
-            const _CustomGradient(begin: Alignment.topRight,end: Alignment.bottomLeft, stops: [0.0, 0.3],colors: [Colors.black54,Colors.transparent],),
-            const _CustomGradient(begin: Alignment.topCenter,end: Alignment.bottomCenter, stops: [0.85, 1.0],colors: [Colors.transparent,Colors.black87],),
+            const _CustomGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, stops: [0.0, 0.2],colors: [Colors.black54,Colors.transparent],),
+            const _CustomGradient(begin: Alignment.topCenter,end: Alignment.bottomCenter, stops: [0.8, 1.0],colors: [Colors.transparent,Colors.black54],),
             const _CustomGradient(begin: Alignment.topLeft, stops: [0.0, 0.3],colors: [Colors.black87,Colors.transparent],)
           ]
         ),
@@ -257,20 +271,17 @@ class _CustomSliverAppBar extends StatelessWidget {
 }
 
 class _CustomGradient extends StatelessWidget {
-
-  final Alignment begin;
-  final Alignment? end;
-  final List<double> stops;
-  final List<Color> colors;
-
-
   const _CustomGradient({
     required this.begin,
              this.end,
     required this.stops,
     required this.colors,
-    super.key
   });
+
+  final AlignmentGeometry begin;
+  final List<Color> colors;
+  final AlignmentGeometry? end;
+  final List<double> stops;
 
   @override
   Widget build(BuildContext context) {

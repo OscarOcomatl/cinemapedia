@@ -1,4 +1,12 @@
+import 'package:isar/isar.dart';
+
+part 'movie.g.dart'; //debe ser nombredelarchivoqueseencuentra.g.dart
+
+@collection
 class Movie {
+
+  Id? isarid; // Para que isar lo asigne auto incremental por defecto
+
   final bool adult;
   final String backdropPath;
   final List<String> genreIds;
